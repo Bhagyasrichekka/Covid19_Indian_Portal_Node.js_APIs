@@ -104,6 +104,41 @@ app.post("/register", async (request, response) => {
   }
 });
 
+//change Password
+
+app.put("/change-password", async (request, response) => {
+  const { username, oldPassword, newPassword } = request.body;
+
+  const query = `
+    SELECT * FROM user WHERE username='${username}';`;
+  const dbUser = await database.get(query);
+
+  if (dbUser === undefined) {
+    response.status(400);
+    response.send("Invalid user");
+  } else {
+    const isPasswordMatch = await bcrypt.compare(oldPassword, dbUser.password);
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    if (isPasswordMatch === true) {
+      if (newPassword.length < 5) {
+        response.status(400);
+        response.send("Password is too short");
+      } else {
+        updateQuery = `
+            UPDATE user
+            SET password='${hashedNewPassword}'
+            WHERE username='${username}';`;
+        database.run(updateQuery);
+        response.status(200);
+        response.send("Password updated");
+      }
+    } else {
+      response.status(400);
+      response.send("Invalid current password");
+    }
+  }
+});
+
 //Login
 
 app.post("/login/", async (request, response) => {
