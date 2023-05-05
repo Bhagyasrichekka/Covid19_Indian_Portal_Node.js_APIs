@@ -72,6 +72,38 @@ function authenticateToken(request, response, next) {
   }
 }
 
+//Register
+app.post("/register", async (request, response) => {
+  const { username, name, password, gender, location } = request.body;
+  const hashedPassword = await bcrypt.hash(request.body.password, 10);
+  const selectUserQuery = `SELECT * FROM user WHERE username = '${username}'`;
+  const dbUser = await database.get(selectUserQuery);
+  if (dbUser === undefined) {
+    if (password.length < 5) {
+      response.status(400);
+      response.send("Password is too short");
+    } else {
+      const createUserQuery = `
+      INSERT INTO 
+        user (username, name, password, gender, location) 
+      VALUES 
+        (
+          '${username}', 
+          '${name}',
+          '${hashedPassword}', 
+          '${gender}',
+          '${location}'
+        )`;
+      const dbResponse = await database.run(createUserQuery);
+      response.status(200);
+      response.send("User created successfully");
+    }
+  } else {
+    response.status(400);
+    response.send("User already exists");
+  }
+});
+
 //Login
 
 app.post("/login/", async (request, response) => {
